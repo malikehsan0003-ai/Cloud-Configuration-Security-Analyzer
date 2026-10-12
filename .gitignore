@@ -1,0 +1,6 @@
+node_modules/
+coverage/
+health-check.log
+.env
+.env.*
+*.log

@@ -1,0 +1,243 @@
+{
+  "metadata": {
+    "config_version": "1.0",
+    "environment": "production",
+    "account_id": "acme-corp-prod-001",
+    "generated_at": "2026-10-12T00:00:00Z"
+  },
+
+  "storage_buckets": [
+    {
+      "id": "acme-public-assets",
+      "name": "acme-public-assets",
+      "region": "us-east-1",
+      "acl": [
+        { "entity": "allUsers", "role": "READER" },
+        { "entity": "project-team-acme", "role": "OWNER" }
+      ],
+      "public_access_prevention": false,
+      "versioning": false,
+      "encryption": "none"
+    },
+    {
+      "id": "acme-customer-data",
+      "name": "acme-customer-data",
+      "region": "us-east-1",
+      "acl": [
+        { "entity": "allAuthenticatedUsers", "role": "WRITER" }
+      ],
+      "public_access_prevention": false,
+      "versioning": false,
+      "encryption": "none"
+    },
+    {
+      "id": "acme-logs-archive",
+      "name": "acme-logs-archive",
+      "region": "us-west-2",
+      "acl": [
+        { "entity": "project-team-acme", "role": "OWNER" }
+      ],
+      "public_access_prevention": "inherited",
+      "versioning": true,
+      "encryption": { "type": "AES256", "enabled": true }
+    }
+  ],
+
+  "iam_policies": [
+    {
+      "id": "admin-full-access",
+      "name": "AdminFullAccess",
+      "attached_to": ["root"],
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": ["*"],
+          "resource": "*"
+        }
+      ]
+    },
+    {
+      "id": "dev-team-policy",
+      "name": "DevTeamBroadAccess",
+      "attached_to": ["dev-team-role"],
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": ["s3:*", "ec2:*", "iam:PassRole"],
+          "resource": "*"
+        }
+      ]
+    },
+    {
+      "id": "lambda-exec-role",
+      "name": "LambdaExecutionRole",
+      "attached_to": ["lambda-service"],
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+          "resource": "arn:aws:logs:*:*:*"
+        },
+        {
+          "effect": "Allow",
+          "actions": ["s3:GetObject"],
+          "resource": "arn:aws:s3:::acme-data-input/*"
+        }
+      ]
+    }
+  ],
+
+  "virtual_machines": [
+    {
+      "id": "web-server-01",
+      "name": "web-server-01",
+      "instance_type": "t3.large",
+      "region": "us-east-1",
+      "public_ip": "54.23.100.45",
+      "os": "Ubuntu 22.04",
+      "disks": [
+        {
+          "id": "vol-root-01",
+          "name": "root-volume",
+          "size_gb": 100,
+          "encrypted": false
+        },
+        {
+          "id": "vol-data-01",
+          "name": "data-volume",
+          "size_gb": 500,
+          "encryption": "none"
+        }
+      ]
+    },
+    {
+      "id": "db-server-01",
+      "name": "db-server-01",
+      "instance_type": "r5.xlarge",
+      "region": "us-east-1",
+      "public_ip": null,
+      "os": "Amazon Linux 2",
+      "disks": [
+        {
+          "id": "vol-db-01",
+          "name": "db-volume",
+          "size_gb": 1000,
+          "encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:123456789:key/abc-123"
+        }
+      ]
+    }
+  ],
+
+  "security_groups": [
+    {
+      "id": "sg-web-public",
+      "name": "web-public-access",
+      "description": "Public web server security group",
+      "ingress": [
+        {
+          "protocol": "tcp",
+          "from_port": 0,
+          "to_port": 65535,
+          "cidr": "0.0.0.0/0",
+          "description": "All TCP traffic from anywhere"
+        }
+      ],
+      "egress": [
+        {
+          "protocol": "-1",
+          "cidr": "0.0.0.0/0",
+          "description": "All outbound traffic"
+        }
+      ]
+    },
+    {
+      "id": "sg-ssh-open",
+      "name": "ssh-management",
+      "description": "SSH access security group",
+      "ingress": [
+        {
+          "protocol": "tcp",
+          "from_port": 22,
+          "to_port": 22,
+          "cidr": "0.0.0.0/0",
+          "description": "SSH from anywhere"
+        },
+        {
+          "protocol": "tcp",
+          "from_port": 3389,
+          "to_port": 3389,
+          "cidr": "0.0.0.0/0",
+          "description": "RDP from anywhere"
+        }
+      ],
+      "egress": [
+        {
+          "protocol": "-1",
+          "cidr": "0.0.0.0/0"
+        }
+      ]
+    },
+    {
+      "id": "sg-database",
+      "name": "database-access",
+      "description": "Database access — broad CIDR",
+      "ingress": [
+        {
+          "protocol": "tcp",
+          "from_port": 3306,
+          "to_port": 3306,
+          "cidr": "10.0.0.0/8",
+          "description": "MySQL from internal broad range"
+        }
+      ],
+      "egress": []
+    }
+  ],
+
+  "databases": [
+    {
+      "id": "prod-mysql-01",
+      "name": "prod-mysql-primary",
+      "engine": "MySQL 8.0",
+      "region": "us-east-1",
+      "encrypted": false,
+      "storage_encrypted": false,
+      "ssl_enforcement": false,
+      "multi_az": true,
+      "backup_retention_days": 7
+    },
+    {
+      "id": "analytics-postgres",
+      "name": "analytics-read-replica",
+      "engine": "PostgreSQL 15",
+      "region": "us-west-2",
+      "encrypted": true,
+      "storage_encrypted": true,
+      "ssl_enforcement": true,
+      "multi_az": false,
+      "backup_retention_days": 30
+    }
+  ],
+
+  "logging": {
+    "enabled": false,
+    "retention_days": 30,
+    "log_categories": ["admin"],
+    "export_destination": null,
+    "configs": [
+      {
+        "service": "compute",
+        "enabled": true
+      },
+      {
+        "service": "storage",
+        "enabled": false
+      },
+      {
+        "service": "iam",
+        "enabled": true
+      }
+    ]
+  }
+}

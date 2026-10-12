@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cloud Configuration Security Analyzer — Upload cloud configs, detect risks, and generate remediation reports.">
+  <title>Cloud Security Analyzer — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <div>
+          <h1>CloudGuard</h1>
+          <p class="subtitle">Configuration Security Analyzer</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-badge" id="serverStatus">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card upload-card" id="uploadSection">
+      <h2>📂 Upload Cloud Configuration</h2>
+      <p class="card-desc">Upload a JSON file containing your cloud resources (storage buckets, IAM policies, VMs, security groups, logging settings) to scan for security risks.</p>
+
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-content">
+          <span class="upload-icon">⬆️</span>
+          <p><strong>Drop JSON file here</strong> or click to browse</p>
+          <p class="upload-hint">Maximum 5 MB · .json files only</p>
+        </div>
+        <input type="file" id="fileInput" accept=".json,application/json" hidden>
+      </div>
+
+      <div class="upload-alt">
+        <span class="divider-text">or try a sample</span>
+      </div>
+      <div class="sample-buttons">
+        <button class="btn btn-danger" id="btnRisky">⚠️ Load Risky Config</button>
+        <button class="btn btn-success" id="btnSafe">✅ Load Safe Config</button>
+        <button class="btn btn-warning" id="btnMalformed">🚫 Load Malformed JSON</button>
+      </div>
+
+      <div class="message message-error" id="errorMsg" hidden></div>
+      <div class="message message-info" id="loadingMsg" hidden>
+        <span class="spinner"></span> Analyzing configuration…
+      </div>
+    </section>
+
+    <section id="resultsSection" hidden>
+      <div class="summary-strip" id="summaryStrip">
+        <div class="summary-card summary-total">
+          <span class="summary-number" id="sumTotal">0</span>
+          <span class="summary-label">Total Findings</span>
+        </div>
+        <div class="summary-card summary-critical">
+          <span class="summary-number" id="sumCritical">0</span>
+          <span class="summary-label">Critical</span>
+        </div>
+        <div class="summary-card summary-high">
+          <span class="summary-number" id="sumHigh">0</span>
+          <span class="summary-label">High</span>
+        </div>
+        <div class="summary-card summary-medium">
+          <span class="summary-number" id="sumMedium">0</span>
+          <span class="summary-label">Medium</span>
+        </div>
+        <div class="summary-card summary-low">
+          <span class="summary-number" id="sumLow">0</span>
+          <span class="summary-label">Low</span>
+        </div>
+        <div class="summary-card summary-info">
+          <span class="summary-number" id="sumInfo">0</span>
+          <span class="summary-label">Info</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="filter-group">
+          <label for="filterSeverity">Filter by Severity:</label>
+          <select id="filterSeverity">
+            <option value="ALL">All Severities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+            <option value="INFO">Info</option>
+          </select>
+
+          <label for="filterStatus">Status:</label>
+          <select id="filterStatus">
+            <option value="ALL">All</option>
+            <option value="OPEN">Open</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+        </div>
+        <div class="export-group">
+          <button class="btn btn-primary" id="btnExportJSON">📥 Export JSON</button>
+          <button class="btn btn-secondary" id="btnExportCSV">📥 Export CSV</button>
+          <button class="btn btn-ghost" id="btnNewScan">🔄 New Scan</button>
+        </div>
+      </div>
+
+      <div id="findingsContainer"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>CloudGuard Security Analyzer &mdash; Prototype v1.0 &mdash; For authorized use only.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

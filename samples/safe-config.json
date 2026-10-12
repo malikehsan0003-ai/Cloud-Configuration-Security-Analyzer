@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "config_version": "1.0",
+    "environment": "production",
+    "account_id": "acme-corp-prod-001",
+    "generated_at": "2026-10-12T00:00:00Z"
+  },
+
+  "storage_buckets": [
+    {
+      "id": "acme-secure-data",
+      "name": "acme-secure-data",
+      "region": "us-east-1",
+      "acl": [
+        { "entity": "project-team-acme", "role": "OWNER" },
+        { "entity": "data-analysts", "role": "READER" }
+      ],
+      "public_access_prevention": true,
+      "versioning": true,
+      "encryption": { "type": "AES256", "enabled": true, "kms_key_id": "projects/acme/locations/global/keyRings/ring1/cryptoKeys/key1" }
+    },
+    {
+      "id": "acme-backups",
+      "name": "acme-backups",
+      "region": "us-west-2",
+      "acl": [
+        { "entity": "backup-service-account", "role": "WRITER" }
+      ],
+      "public_access_prevention": true,
+      "versioning": true,
+      "encryption": { "type": "AES256", "enabled": true }
+    }
+  ],
+
+  "iam_policies": [
+    {
+      "id": "app-read-policy",
+      "name": "AppReadOnlyPolicy",
+      "attached_to": ["app-service-role"],
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": ["s3:GetObject", "s3:ListBucket"],
+          "resource": "arn:aws:s3:::acme-secure-data/*",
+          "condition": { "IpAddress": { "aws:SourceIp": "10.0.0.0/16" } }
+        }
+      ]
+    },
+    {
+      "id": "deploy-policy",
+      "name": "DeployPolicy",
+      "attached_to": ["ci-cd-role"],
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": ["ecs:UpdateService", "ecr:PushImage"],
+          "resource": "arn:aws:ecs:us-east-1:123456789:service/acme-app",
+          "condition": { "StringEquals": { "aws:RequestedRegion": "us-east-1" } }
+        }
+      ]
+    }
+  ],
+
+  "virtual_machines": [
+    {
+      "id": "app-server-01",
+      "name": "app-server-01",
+      "instance_type": "t3.medium",
+      "region": "us-east-1",
+      "public_ip": null,
+      "os": "Ubuntu 22.04",
+      "disks": [
+        {
+          "id": "vol-app-01",
+          "name": "root-volume",
+          "size_gb": 50,
+          "encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:123456789:key/xyz-456"
+        }
+      ]
+    }
+  ],
+
+  "security_groups": [
+    {
+      "id": "sg-app-private",
+      "name": "app-private-access",
+      "description": "Application tier — restricted access",
+      "ingress": [
+        {
+          "protocol": "tcp",
+          "from_port": 443,
+          "to_port": 443,
+          "cidr": "10.0.0.0/16",
+          "description": "HTTPS from internal VPC only"
+        }
+      ],
+      "egress": [
+        {
+          "protocol": "tcp",
+          "from_port": 443,
+          "to_port": 443,
+          "cidr": "0.0.0.0/0",
+          "description": "HTTPS outbound for API calls"
+        }
+      ]
+    },
+    {
+      "id": "sg-db-private",
+      "name": "database-private",
+      "description": "Database tier — app-only access",
+      "ingress": [
+        {
+          "protocol": "tcp",
+          "from_port": 5432,
+          "to_port": 5432,
+          "cidr": "10.0.1.0/24",
+          "description": "PostgreSQL from app subnet only"
+        }
+      ],
+      "egress": []
+    }
+  ],
+
+  "databases": [
+    {
+      "id": "prod-postgres-01",
+      "name": "prod-postgres-primary",
+      "engine": "PostgreSQL 15",
+      "region": "us-east-1",
+      "encrypted": true,
+      "storage_encrypted": true,
+      "ssl_enforcement": true,
+      "multi_az": true,
+      "backup_retention_days": 35
+    }
+  ],
+
+  "logging": {
+    "enabled": true,
+    "retention_days": 365,
+    "log_categories": ["admin", "data_access", "data_write", "system"],
+    "export_destination": "s3://acme-log-archive/audit-logs/",
+    "sink": "projects/acme/sinks/audit-log-sink",
+    "configs": [
+      { "service": "compute", "enabled": true },
+      { "service": "storage", "enabled": true },
+      { "service": "iam", "enabled": true },
+      { "service": "database", "enabled": true }
+    ]
+  }
+}
