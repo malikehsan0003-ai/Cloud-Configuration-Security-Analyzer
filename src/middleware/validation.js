@@ -5,6 +5,13 @@ function validateConfigJSON(raw) {
     throw new ValidationError('No configuration data provided.');
   }
 
+  // Strip UTF-8 BOM (Byte Order Mark) if present (common in Windows files)
+  raw = raw.replace(/^\uFEFF/, '').trim();
+
+  if (!raw) {
+    throw new ValidationError('Configuration file is empty.');
+  }
+
   if (Buffer.byteLength(raw, 'utf8') > MAX_FILE_SIZE) {
     throw new ValidationError(`Configuration file exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB.`);
   }
